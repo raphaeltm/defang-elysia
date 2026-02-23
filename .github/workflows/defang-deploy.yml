@@ -1,0 +1,47 @@
+name: Defang Deploy
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      action:
+        description: "Whether to deploy up or down"
+        required: true
+        default: "up"
+        type: choice
+        options:
+          - up
+          - down
+
+jobs:
+  defang:
+    name: Defang ${{ github.event.inputs.action || 'up' }}
+    environment: production
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+
+    concurrency:
+      cancel-in-progress: false
+      group: deploy-defang-elysia-production
+
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v4
+
+      - name: Defang ${{ github.event.inputs.action || 'up' }}
+        uses: DefangLabs/defang-github-action@v1
+        with:
+          command: ${{ github.event.inputs.action || 'up' }}
+          project: defang-elysia
+          stack: production
+
+      - name: Deployment Summary
+        uses: DefangLabs/defang-github-action@v1
+        with:
+          command: services
+          project: defang-elysia
+          stack: production
